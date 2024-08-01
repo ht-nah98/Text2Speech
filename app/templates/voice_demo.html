@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Voice Demo{% endblock %}
+
+{% block content %}
+<h1>Voice Samples</h1>
+<p>Listen to the different voice options before making your selection: All voice in speed 1</p>
+
+<div class="voice-samples">
+    {% for sample in voice_samples %}
+    <div class="voice-sample">
+        <h3>{{ sample.split('_')[0].capitalize() }}</h3>
+        <audio controls>
+            <source src="{{ url_for('static', filename='demo_voice/' + sample) }}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+    {% endfor %}
+</div>
+
+<a href="{{ url_for('speech.speech_generator') }}">Go to Speech Generator</a>
+{% endblock %}

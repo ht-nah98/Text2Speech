@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Text to Speech Generator{% endblock %}
+
+{% block content %}
+<div class="generator-container">
+    <h1>Text to Speech Generator</h1>
+    <form id="tts-form">
+        <textarea id="input-text" name="text" rows="5" placeholder="Enter your text here..."></textarea>
+        <label for="voice-select">Voice:</label>
+        <select id="voice-select" name="voice">
+            <option value="echo">Echo</option>
+            <option value="alloy">Alloy</option>
+            <option value="fable">Fable</option>
+            <option value="onyx">Onyx</option>
+            <option value="nova">Nova</option>
+            <option value="shimmer">Shimmer</option>
+        </select>
+        <label for="speed-factor">Speed factor: <span id="speed-value">0.89</span></label>
+        <input type="range" id="speed-factor" name="speed_factor" min="0.5" max="2" step="0.01" value="0.89">
+        <button type="submit" class="generate-button">Generate Speech</button>
+    </form>
+    <div id="audio-player" style="display: none;">
+        <audio controls id="speech-audio">
+            Your browser does not support the audio element.
+        </audio>
+        <br>
+        <a id="download-link" href="#" download="generated_speech.mp3">Download Audio</a>
+    </div>
+    <div id="error-message" style="display: none; color: red; margin-top: 1rem;"></div>
+    <div id="api-key-form" style="display: none; margin-top: 1rem;">
+        <input type="text" id="new-api-key" placeholder="Enter new API key">
+        <div class="button-container">
+            <button id="submit-new-api-key" class="generate-button">Submit New API Key</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('speed-factor').addEventListener('input', function(e) {
+    document.getElementById('speed-value').textContent = e.target.value;
+});
+
+document.getElementById('tts-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{{ url_for("speech.speech_generator") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || 'Unknown error occurred');
+            });
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const audioUrl = URL.createObjectURL(blob);
+        const audioPlayer = document.getElementById('speech-audio');
+        audioPlayer.src = audioUrl;
+        document.getElementById('audio-player').style.display = 'block';
+        
+        // Update download link
+        const downloadLink = document.getElementById('download-link');
+        downloadLink.href = audioUrl;
+
+        // Hide error message and API key form if previously shown
+        document.getElementById('error-message').style.display = 'none';
+        document.getElementById('api-key-form').style.display = 'none';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const errorMessage = document.getElementById('error-message');
+        errorMessage.textContent = error.message;
+        errorMessage.style.display = 'block';
+        
+        if (error.message.includes('Invalid API key') || error.message.includes('Incorrect API key')) {
+            document.getElementById('api-key-form').style.display = 'block';
+        }
+        
+        document.getElementById('audio-player').style.display = 'none';
+    });
+});
+
+document.getElementById('submit-new-api-key').addEventListener('click', function() {
+    const newApiKey = document.getElementById('new-api-key').value;
+    fetch('{{ url_for("main.set_api_key") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `api_key=${encodeURIComponent(newApiKey)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('API key updated successfully. You can now try generating speech again.');
+            document.getElementById('api-key-form').style.display = 'none';
+            document.getElementById('error-message').style.display = 'none';
+        } else {
+            alert('Failed to update API key. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating the API key. Please try again.');
+    });
+});
+</script>
+{% endblock %}

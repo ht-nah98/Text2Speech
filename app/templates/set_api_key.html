@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Set API Key{% endblock %}
+
+{% block content %}
+<div class="generator-container">
+    <h1>Set API Key</h1>
+    <form method="POST">
+        <label for="api-key">Enter your OpenAI API Key:</label>
+        <input type="text" id="api-key" name="api_key" required>
+        <button type="submit">Set API Key</button>
+    </form>
+</div>
+{% endblock %}
